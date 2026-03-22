@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LSI-Rank — Results Comparison</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8f7f4;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 { font-size: 1.4rem; font-weight: 500; margin: 0 0 0.25rem; }
+    p.sub { font-size: 0.875rem; color: #73726c; margin: 0 0 2rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: #fff;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .card h2 {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #73726c;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 1rem;
+    }
+    .chart-wrap { position: relative; height: 220px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th {
+      font-weight: 500;
+      text-align: right;
+      padding: 6px 10px;
+      border-bottom: 1px solid #d3d1c7;
+      color: #73726c;
+      font-size: 0.78rem;
+    }
+    th:first-child { text-align: left; }
+    td {
+      text-align: right;
+      padding: 6px 10px;
+      border-bottom: 0.5px solid #ebe9e0;
+      font-variant-numeric: tabular-nums;
+    }
+    td:first-child { text-align: left; font-weight: 500; }
+    td.best { color: #0f6e56; font-weight: 500; }
+    tr:last-child td { border-bottom: none; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 0.75rem;
+      font-size: 0.78rem;
+      color: #73726c;
+    }
+    .legend span { display: flex; align-items: center; gap: 5px; }
+    .dot { width: 10px; height: 10px; border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <h1>LSI-Rank — Results comparison</h1>
+  <p class="sub">k = latent dimensions used in SVD. Evaluated on CRAN (225 queries).</p>
+
+  <div class="grid">
+
+    <div class="card">
+      <h2>MAP — Mean Average Precision</h2>
+      <div class="chart-wrap"><canvas id="mapChart"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Precision@K</h2>
+      <div class="legend">
+        <span><span class="dot" style="background:#378ADD"></span>P@5</span>
+        <span><span class="dot" style="background:#85B7EB"></span>P@10</span>
+        <span><span class="dot" style="background:#B5D4F4"></span>P@20</span>
+      </div>
+      <div class="chart-wrap"><canvas id="precChart"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Recall@K</h2>
+      <div class="legend">
+        <span><span class="dot" style="background:#1D9E75"></span>R@5</span>
+        <span><span class="dot" style="background:#5DCAA5"></span>R@10</span>
+        <span><span class="dot" style="background:#9FE1CB"></span>R@20</span>
+      </div>
+      <div class="chart-wrap"><canvas id="recChart"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>NDCG@K</h2>
+      <div class="legend">
+        <span><span class="dot" style="background:#D85A30"></span>NDCG@5</span>
+        <span><span class="dot" style="background:#F0997B"></span>NDCG@10</span>
+        <span><span class="dot" style="background:#F5C4B3"></span>NDCG@20</span>
+      </div>
+      <div class="chart-wrap"><canvas id="ndcgChart"></canvas></div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <h2>Full comparison table</h2>
+    <table id="compTable"></table>
+  </div>
+
+<script>
+const labels  = ["50", "100", "150", "200", "250", "300"];
+const results = [{"k": 50, "num_queries_evaluated": 225, "MAP": 0.3097, "P@5": 0.3022, "R@5": 0.2678, "F1@5": 0.2542, "NDCG@5": 0.3531, "P@10": 0.2404, "R@10": 0.3913, "F1@10": 0.2695, "NDCG@10": 0.3755, "P@20": 0.1664, "R@20": 0.5173, "F1@20": 0.2329, "NDCG@20": 0.4191}, {"k": 100, "num_queries_evaluated": 225, "MAP": 0.325, "P@5": 0.3324, "R@5": 0.3037, "F1@5": 0.2829, "NDCG@5": 0.3869, "P@10": 0.2542, "R@10": 0.4341, "F1@10": 0.2905, "NDCG@10": 0.4063, "P@20": 0.1689, "R@20": 0.5437, "F1@20": 0.2385, "NDCG@20": 0.4436}, {"k": 150, "num_queries_evaluated": 225, "MAP": 0.3215, "P@5": 0.3262, "R@5": 0.2961, "F1@5": 0.2778, "NDCG@5": 0.3873, "P@10": 0.2484, "R@10": 0.4211, "F1@10": 0.2833, "NDCG@10": 0.4051, "P@20": 0.1673, "R@20": 0.5391, "F1@20": 0.2362, "NDCG@20": 0.4454}, {"k": 200, "num_queries_evaluated": 225, "MAP": 0.3179, "P@5": 0.3324, "R@5": 0.313, "F1@5": 0.2889, "NDCG@5": 0.3928, "P@10": 0.2418, "R@10": 0.4147, "F1@10": 0.2768, "NDCG@10": 0.401, "P@20": 0.1582, "R@20": 0.5178, "F1@20": 0.2239, "NDCG@20": 0.4355}, {"k": 250, "num_queries_evaluated": 225, "MAP": 0.3058, "P@5": 0.3191, "R@5": 0.3018, "F1@5": 0.279, "NDCG@5": 0.3796, "P@10": 0.2276, "R@10": 0.398, "F1@10": 0.2627, "NDCG@10": 0.3854, "P@20": 0.1502, "R@20": 0.5003, "F1@20": 0.2134, "NDCG@20": 0.42}, {"k": 300, "num_queries_evaluated": 225, "MAP": 0.2896, "P@5": 0.2996, "R@5": 0.2806, "F1@5": 0.2592, "NDCG@5": 0.3612, "P@10": 0.2253, "R@10": 0.3945, "F1@10": 0.2597, "NDCG@10": 0.3776, "P@20": 0.1438, "R@20": 0.4779, "F1@20": 0.2042, "NDCG@20": 0.404}];
+
+const METRICS = ["MAP","P@5","P@10","P@20","R@5","R@10","R@20","NDCG@5","NDCG@10","NDCG@20"];
+const best = {};
+METRICS.forEach(m => {
+  best[m] = Math.max(...results.map(r => r[m]));
+});
+
+const shared = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { color: "rgba(0,0,0,0.05)" }, ticks: { color: "#888780" } },
+    y: { min: 0, grid: { color: "rgba(0,0,0,0.05)" },
+         ticks: { color: "#888780", callback: v => v.toFixed(2) } }
+  }
+};
+
+function lineDs(data, color, label) {
+  return {
+    label, data,
+    borderColor: color, backgroundColor: color + "22",
+    borderWidth: 2, pointRadius: 4, pointHoverRadius: 6,
+    tension: 0.35, fill: false
+  };
+}
+
+new Chart(document.getElementById("mapChart"), {
+  type: "line",
+  data: { labels, datasets: [lineDs([0.3097, 0.325, 0.3215, 0.3179, 0.3058, 0.2896], "#378ADD", "MAP")] },
+  options: { ...shared, scales: { ...shared.scales, y: { ...shared.scales.y, suggestedMax: 0.5 } } }
+});
+
+new Chart(document.getElementById("precChart"), {
+  type: "line",
+  data: { labels, datasets: [
+    lineDs([0.3022, 0.3324, 0.3262, 0.3324, 0.3191, 0.2996],  "#378ADD", "P@5"),
+    lineDs([0.2404, 0.2542, 0.2484, 0.2418, 0.2276, 0.2253], "#85B7EB", "P@10"),
+    lineDs([0.1664, 0.1689, 0.1673, 0.1582, 0.1502, 0.1438], "#B5D4F4", "P@20"),
+  ]},
+  options: shared
+});
+
+new Chart(document.getElementById("recChart"), {
+  type: "line",
+  data: { labels, datasets: [
+    lineDs([0.2678, 0.3037, 0.2961, 0.313, 0.3018, 0.2806],  "#1D9E75", "R@5"),
+    lineDs([0.3913, 0.4341, 0.4211, 0.4147, 0.398, 0.3945], "#5DCAA5", "R@10"),
+    lineDs([0.5173, 0.5437, 0.5391, 0.5178, 0.5003, 0.4779], "#9FE1CB", "R@20"),
+  ]},
+  options: shared
+});
+
+new Chart(document.getElementById("ndcgChart"), {
+  type: "line",
+  data: { labels, datasets: [
+    lineDs([0.3531, 0.3869, 0.3873, 0.3928, 0.3796, 0.3612],  "#D85A30", "NDCG@5"),
+    lineDs([0.3755, 0.4063, 0.4051, 0.401, 0.3854, 0.3776], "#F0997B", "NDCG@10"),
+    lineDs([0.4191, 0.4436, 0.4454, 0.4355, 0.42, 0.404], "#F5C4B3", "NDCG@20"),
+  ]},
+  options: shared
+});
+
+// Table
+const tbl  = document.getElementById("compTable");
+const cols = ["k", ...METRICS];
+const head = "<tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr>";
+tbl.innerHTML = "<thead>" + head + "</thead><tbody>" +
+  results.map(r => {
+    const cells = cols.map(c => {
+      if (c === "k") return `<td>${r.k}</td>`;
+      const v   = r[c];
+      const cls = v === best[c] ? ' class="best"' : '';
+      return `<td${cls}>${v.toFixed(4)}</td>`;
+    });
+    return "<tr>" + cells.join("") + "</tr>";
+  }).join("") + "</tbody>";
+</script>
+</body>
+</html>
